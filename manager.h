@@ -13,11 +13,13 @@
 #ifndef STUDENT_MANAGER_H
 #define STUDENT_MANAGER_H
 #define DEFAULTPASSSCORE 60
+#define OBJECTNUM 3
 
 #include <istream>
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 class scores {
 private:
@@ -42,6 +44,10 @@ public:
 
     double getEnglishScore() const {
         return EnglishScore;
+    }
+
+    double getTotal() const {
+        return ChineseScore + MathScore + EnglishScore;
     }
 };
 
@@ -88,7 +94,7 @@ public:
         }
     }
 
-    const scores calculateAverage() {
+    const scores calculateAverage() const {
         double ChineseScore = 0, MathScore = 0, EnglishScore = 0;
         for (int i = 0; i < studentNum; i++) {
             ChineseScore += score[i].getChineseScore();
@@ -100,7 +106,7 @@ public:
 
     const scores analyzeFlunk(vector<int> *flunks,
                               const scores averageScore = scores(DEFAULTPASSSCORE, DEFAULTPASSSCORE,
-                                                                 DEFAULTPASSSCORE)) {
+                                                                 DEFAULTPASSSCORE)) const {
         int ChineseScoreTmp = 0, MathScoreTmp = 0, EnglishScoreTmp = 0;
         for (int i = 0; i < studentNum; i++) {
 
@@ -123,9 +129,9 @@ public:
     }
 
 //(1) 统计平均分不及格人数并打印不及格学生名单
-    void function0() {
+    void function0() const {
         const scores averageScore = calculateAverage();
-        auto *flunkIndex = new vector<int>[3];
+        auto *flunkIndex = new vector<int>[OBJECTNUM];
         const scores flunkNum = analyzeFlunk(flunkIndex);
         cout << "The average score is:" <<
              " Chinese " << averageScore.getChineseScore() <<
@@ -139,7 +145,7 @@ public:
              << endl;
         string object[] = {"Chinese", "Math", "English"};
         cout << "The flunk's details are:" << endl;
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < OBJECTNUM; ++i) {
             if (flunkIndex[i].empty())
                 cout << "no " << object[i] << "\'s flunk" << endl;
             else {
@@ -153,13 +159,13 @@ public:
     }
 
 //(2) 统计成绩在全班平均分及平均分之上的学生人数并打印其学生名单
-    void function1() {
+    void function1() const {
         const scores averageScore = calculateAverage();
-        auto *flunkIndex = new vector<int>[3];
+        auto *flunkIndex = new vector<int>[OBJECTNUM];
         const scores flunkNum = analyzeFlunk(flunkIndex, averageScore);
         string object[] = {"Chinese", "Math", "English"};
         cout << "The Passed details are :" << endl;
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < OBJECTNUM; ++i) {
             if (flunkIndex[i].size() == studentNum)
                 cout << "no passed students in " << object[i] << endl;
             else {
@@ -178,26 +184,98 @@ public:
     }
 
 //(3) 统计平均分的各分数段的学生人数及所占的百分比
-    void function2() {
+    void function2() const {
+        int section[OBJECTNUM][10];
+        for (auto &i : section)
+            for (int &j : i)
+                j = 0;
+        for (int i = 0; i < studentNum; ++i) {
+            int Tmp[] = {static_cast<int>(score[i].getChineseScore() / 10),
+                         static_cast<int>(score[i].getMathScore() / 10),
+                         static_cast<int>(score[i].getEnglishScore() / 10)};
+            for (int j = 0; j < OBJECTNUM; j++)
+                section[j][Tmp[j] != 10 ? Tmp[j] : 9]++;
+        }
+        int total[] = {0, 0, 0};
+        string object[] = {"Chinese", "Math", "English"};
+        for (int i = 0; i < OBJECTNUM; ++i)
+            for (int j = 0; j < 10; ++j) {
+                total[i] += section[i][j];
+            }
+        for (int i = 0; i < OBJECTNUM; ++i) {
+            cout << object[i] << "\'s details: \n";
+            for (int j = 0; j < 10; ++j) {
+                cout << j << "0 -" << j + 1 << "0 : total number " << section[i][j] << " percent "
+                     << 100.0 * section[i][j] / total[i] << "%" << endl;
+            }
 
+        }
     }
 
 //(4) 按总分成绩由高到低排出成绩的名次
-    void function3() {
-
+    void function3() const {
+        auto *total = new double[studentNum];
+        for (int i = 0; i < studentNum; ++i)
+            total[i] = score[i].getChineseScore() + score[i].getEnglishScore() + score[i].getMathScore();
+        map<int, double> sortMap;
+        for (int i = 0; i < studentNum; ++i)
+            sortMap[i] = total[i];
+        vector<pair<int, double>> vec;
+        vec.reserve(sortMap.size());
+        for (auto &it : sortMap)
+            vec.emplace_back(it.first, it.second);
+        sort(vec.begin(), vec.end(),
+             [](pair<int, double> x, pair<int, double> y) -> int { return x.second > y.second; });
+        cout << "sort and print the details by total scores: \n";
+        for (auto &item : vec)
+            cout << studentName[item.first] << ": " << item.second << endl;
+        delete[] total;
     }
 
 //(5) 打印出名次表，表格内包括学生编号、各科分数、总分和平均分
-    void function4() {
+    void function4() const {
+        for (int i = 0; i < studentNum; i++) {
+            cout << "name: " << studentName[i]
+                 << " ID: " << studentID[i]
+                 << " Chinese: " << score[i].getChineseScore()
+                 << " Math: " << score[i].getMathScore()
+                 << " English: " << score[i].getEnglishScore()
+                 << " total: " << score[i].getTotal()
+                 << " average: " << score[i].getTotal() / OBJECTNUM << endl;
+        }
 
     }
 
 //(6) 任意输入一个学号，能够查找出该学生在班级中的排名及其考试分数
-    void function5() {
+    void function5() const {
+        string IDToSearch;
+        cout << "Please specify the ID you want to search :";
+        cin >> IDToSearch;
+        for (int i = 0; i < studentNum; i++)
+            if (studentID[i] == IDToSearch) {
+                auto *total = new double[studentNum];
+                for (int j = 0; j < studentNum; j++)
+                    total[j] = score[j].getTotal();
+                int rank = 1;
+                for (int k = 0; k < studentNum; ++k)
+                    if (k != i && total[k] > total[i])
+                        rank++;
+                cout << "found successfully : \nname: " << studentName[i]
+                     << " ID: " << studentID[i]
+                     << " rank: " << rank
+                     << " Chinese: " << score[i].getChineseScore()
+                     << " Math: " << score[i].getMathScore()
+                     << " English: " << score[i].getEnglishScore()
+                     << " total: " << score[i].getTotal()
+                     << " average: " << score[i].getTotal() / OBJECTNUM << endl;
+                delete[] total;
+                return;
+            }
+        cout<<" no searching result specified by ID "<<IDToSearch<<endl;
 
     }
 
-    void firstPrint() {
+    void firstPrint() const {
         cout << "Welcome to my student's score manager\n";
         cout << "Preface: \n";
         cout << "read data from the specified file,"
@@ -206,7 +284,7 @@ public:
              << endl;
     }
 
-    void printHelp() {
+    void printHelp() const {
         cout << "function introduction: \n";
         cout << "(1) calculate and print the average score,flunk index\n";
         cout << "(2) calculate and print the passed student's number and details\n";
@@ -220,11 +298,11 @@ public:
         cout << "h or H to display this help and exit\n";
     }
 
-    void goodbye() {
+    void goodbye() const {
         cout << "code happily.\nenjoy your life.\nsee you!\n";
     }
 
-    void invalidKey(const char key) {
+    void invalidKey(const char key) const {
         cout << "cannot recognize the input key: " << key << endl;
     }
 
